@@ -213,15 +213,11 @@ model AvailabilitySlot {
   dayOfWeek     DayOfWeek?   
   startTimeUTC  String?      
   endTimeUTC    String?      
-
   dateUTC       DateTime?    
   startAtUTC    DateTime?
   endAtUTC      DateTime?
-
   timezone      String?      
-
   technician    User         @relation(fields: [technicianId], references: [id], onDelete: Cascade)
-
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -235,7 +231,6 @@ model Order {
   userId         String
   technicianId   String?
   serviceId      String
-
   address        String
   latitude       Decimal?      @db.Decimal(10,7)
   longitude      Decimal?      @db.Decimal(10,7)
@@ -245,7 +240,6 @@ model Order {
   completedAt    DateTime?
   cancelledAt    DateTime?
   cancelReason   String?
-
   priceQuoted    Decimal?      @db.Decimal(12,2)
   priceFinal     Decimal?      @db.Decimal(12,2)
   currency       String        @default("BDT")
@@ -257,9 +251,7 @@ model Order {
   payment        Payment?
   review         Review?
   notifications  Notification[] @relation("OrderNotifications")
-
   meta           Json?
-
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -279,7 +271,6 @@ model TrackingEvent {
   headingDeg Decimal?       @db.Decimal(6,2)
   speedKph   Decimal?       @db.Decimal(6,2)
   note       String?
-
   order      Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   createdAt  DateTime       @default(now())
 
