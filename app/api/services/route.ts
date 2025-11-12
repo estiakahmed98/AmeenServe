@@ -5,7 +5,6 @@ export async function GET() {
     console.log('Fetching services from database...');
     const services = await db.service.findMany({
       where: { isActive: true },
-      include: { category: true },
       orderBy: { name: "asc" },
     });
     
