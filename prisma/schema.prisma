@@ -8,9 +8,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// ===============================
-/// Core Enums
-/// ===============================
 enum Role {
   ADMIN
   MANAGER
@@ -32,15 +29,15 @@ enum KycStatus {
 }
 
 enum OrderStatus {
-  REQUESTED      // user created request; not yet broadcasted
-  PENDING        // broadcasted; waiting for technician accept
-  ACCEPTED       // technician accepted
-  ARRIVING       // technician en route
-  STARTED        // work started
-  IN_PROGRESS    // working
-  COMPLETED      // finished
-  CANCELLED      // cancelled by user/admin
-  NO_SHOW        // technician no-show
+  REQUESTED      
+  PENDING        
+  ACCEPTED       
+  ARRIVING     
+  STARTED       
+  IN_PROGRESS   
+  COMPLETED      
+  CANCELLED      
+  NO_SHOW        
 }
 
 enum TrackingSource {
@@ -87,9 +84,6 @@ enum DayOfWeek {
   SAT
 }
 
-/// ===============================
-/// NextAuth base models (official)
-/// ===============================
 model User {
   id            String       @id @default(uuid())
   name          String?
@@ -97,19 +91,15 @@ model User {
   emailVerified DateTime?
   image         String?
 
-  // Credentials use-case (optional)
   phone         String?      @unique
   passwordHash  String?
 
   role          Role         @default(USER)
   status        UserStatus   @default(ACTIVE)
 
-  // Profile
   fullName      String?
   city          String?
   address       String?
-
-  // Relations
   accounts      Account[]
   sessions      Session[]
   technician    Technician?
@@ -165,9 +155,6 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-/// ===============================
-/// Service Catalog
-/// ===============================
 model ServiceCategory {
   id        String            @id @default(uuid())
   name      String
@@ -190,7 +177,7 @@ model Service {
   categoryId  String
   category    ServiceCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   basePrice   Decimal?           @db.Decimal(12,2)
-  unit        String?            // e.g., "per visit", "per hour"
+  unit        String?            
   isActive    Boolean            @default(true)
 
   technicians TechnicianService[]
@@ -200,9 +187,6 @@ model Service {
   updatedAt   DateTime           @updatedAt
 }
 
-/// ===============================
-/// Technician Profile & Availability
-/// ===============================
 model Technician {
   id               String              @id @default(uuid())
   userId           String              @unique
@@ -219,7 +203,6 @@ model Technician {
   isOnline         Boolean             @default(false)
   lastSeen         DateTime?
 
-  // current live position (optional)
   currentLat       Decimal?            @db.Decimal(10,7)
   currentLng       Decimal?            @db.Decimal(10,7)
   serviceRadiusKm  Decimal?            @db.Decimal(6,2)
@@ -253,16 +236,15 @@ model TechnicianService {
 model AvailabilitySlot {
   id            String       @id @default(uuid())
   technicianId  String
-  dayOfWeek     DayOfWeek?   // recurring weekly slot
-  startTimeUTC  String?      // "09:00"
-  endTimeUTC    String?      // "17:00"
+  dayOfWeek     DayOfWeek?   
+  startTimeUTC  String?      
+  endTimeUTC    String?      
 
-  // For ad-hoc specific date slots (optional)
-  dateUTC       DateTime?    // exact date
+  dateUTC       DateTime?    
   startAtUTC    DateTime?
   endAtUTC      DateTime?
 
-  timezone      String?      // e.g., "Asia/Dhaka"
+  timezone      String?      
 
   technician    Technician   @relation(fields: [technicianId], references: [id], onDelete: Cascade)
 
@@ -273,22 +255,16 @@ model AvailabilitySlot {
   @@index([dateUTC])
 }
 
-/// ===============================
-/// Orders, Tracking & Reviews
-/// ===============================
 model Order {
   id             String        @id @default(uuid())
-  code           String        @unique         // human-friendly, e.g. ORD-2025-00001
+  code           String        @unique
   userId         String
   technicianId   String?
   serviceId      String
 
-  // Location at booking
   address        String
   latitude       Decimal?      @db.Decimal(10,7)
   longitude      Decimal?      @db.Decimal(10,7)
-
-  // Lifecycle
   status         OrderStatus   @default(REQUESTED)
   scheduledAt    DateTime?
   startedAt      DateTime?
@@ -296,12 +272,9 @@ model Order {
   cancelledAt    DateTime?
   cancelReason   String?
 
-  // Money
   priceQuoted    Decimal?      @db.Decimal(12,2)
   priceFinal     Decimal?      @db.Decimal(12,2)
   currency       String        @default("BDT")
-
-  // Relations
   user           User          @relation("CustomerOrders", fields: [userId], references: [id], onDelete: Cascade)
   technician     Technician?   @relation("TechnicianOrders", fields: [technicianId], references: [id])
   service        Service       @relation(fields: [serviceId], references: [id], onDelete: Restrict)
@@ -344,7 +317,7 @@ model OrderStatusEvent {
   orderId    String
   from       OrderStatus?
   to         OrderStatus
-  actorId    String?      // who made the change (user/admin/tech)
+  actorId    String?      
   actor      User?        @relation("StatusActor", fields: [actorId], references: [id])
   reason     String?
   at         DateTime     @default(now())
@@ -360,7 +333,7 @@ model Review {
   orderId      String    @unique
   userId       String
   technicianId String
-  rating       Int       // 1..5
+  rating       Int       
   comment      String?
 
   order        Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -373,16 +346,13 @@ model Review {
   @@index([userId])
 }
 
-/// ===============================
-/// Payments & Payouts
-/// ===============================
 model Payment {
   id             String        @id @default(uuid())
   orderId        String        @unique
   amount         Decimal       @db.Decimal(12,2)
   currency       String        @default("BDT")
   status         PaymentStatus @default(UNPAID)
-  method         String?       // "cash", "card", "bkash", etc.
+  method         String?       
   transactionRef String?
   paidAt         DateTime?
 
@@ -410,13 +380,10 @@ model Payout {
   @@index([technicianId, status])
 }
 
-/// ===============================
-/// KYC, Addresses, Devices, Notifications, Audit
-/// ===============================
 model KycDocument {
   id            String     @id @default(uuid())
   technicianId  String
-  type          String     // NID, DrivingLicense, etc.
+  type          String     
   url           String
   status        KycStatus  @default(PENDING)
   verifiedById  String?
@@ -434,7 +401,7 @@ model KycDocument {
 model UserAddress {
   id         String   @id @default(uuid())
   userId     String
-  label      String?  // Home, Office
+  label      String?  
   address    String
   latitude   Decimal? @db.Decimal(10,7)
   longitude  Decimal? @db.Decimal(10,7)
@@ -451,7 +418,7 @@ model Device {
   id         String         @id @default(uuid())
   userId     String
   platform   DevicePlatform @default(WEB)
-  token      String?        // push token
+  token      String?        
   lastSeen   DateTime?
 
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -484,8 +451,8 @@ model AuditLog {
   id         String   @id @default(uuid())
   actorId    String?
   actor      User?    @relation("AuditActor", fields: [actorId], references: [id])
-  action     String   // e.g., "ORDER_CANCEL", "KYC_VERIFY"
-  targetType String   // e.g., "Order", "Technician", "User"
+  action     String   
+  targetType String   
   targetId   String?
   meta       Json?
 
