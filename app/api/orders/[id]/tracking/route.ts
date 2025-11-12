@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
+import { NextRequest } from "next/server";
 
 const TrackSchema = z.object({
   latitude: z.number(),
@@ -13,7 +14,9 @@ const TrackSchema = z.object({
   source: z.enum(["TECH_APP","CUSTOMER_APP","SERVER"]).optional(),
 });
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   const session = await getServerSession(authOptions);
   if (!session?.user) return new Response("Unauthorized", { status: 401 });
 
@@ -23,7 +26,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const event = await db.trackingEvent.create({
     data: {
-      orderId: params.id,
+      orderId: id,
       ...parsed.data,
     } as any,
   });
