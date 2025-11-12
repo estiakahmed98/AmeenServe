@@ -22,12 +22,6 @@ async function main() {
   });
 
   // Base categories
-  const home = await prisma.serviceCategory.upsert({
-    where: { slug: "home-services" },
-    update: {},
-    create: { name: "Home Services", slug: "home-services" },
-  });
-
   // Base services
   const services = [
     { name: "Electrician", slug: "electrician" },
@@ -46,12 +40,12 @@ async function main() {
   for (const s of services) {
     await prisma.service.upsert({
       where: { slug: s.slug },
-      update: { isActive: true, categoryId: home.id },
+      update: { isActive: true },
       create: {
         name: s.name,
         slug: s.slug,
-        categoryId: home.id,
-        basePrice: "0",
+        // `Service` model in schema.prisma does not have categoryId/basePrice fields
+        // so we only set fields that actually exist in the current schema.
         unit: "per job",
       },
     });
