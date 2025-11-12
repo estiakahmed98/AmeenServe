@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,19 @@ export default function SignupPage() {
     Array<{ id: string; name: string }>
   >([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [toast, setToast] = useState<null | { message: string; type: "success" | "error" }>(null);
+  const toastTimerRef = useRef<number | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 3000);
+  };
 
   // Load services for technician skills selection
   useEffect(() => {
@@ -115,15 +128,32 @@ export default function SignupPage() {
           serviceRadiusKm: parseFloat(form.serviceRadiusKm),
         });
       }
-      alert("Account created successfully!");
-    } catch (err) {
+      showToast("Account created successfully!", "success");
+      window.setTimeout(() => {
+        window.location.reload();
+      }, 900);
+    } catch (err: any) {
       console.error(err);
-      alert("Something went wrong!");
+      const msg = err?.response?.data?.error || err?.message || "Something went wrong";
+      showToast(msg, "error");
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-between bg-white relative overflow-hidden">
+      {toast && (
+        <div
+          className={`fixed top-4 right-4 z-50 rounded-md px-4 py-2 shadow-lg text-sm ${
+            toast.type === "success"
+              ? "bg-green-600 text-white"
+              : "bg-red-600 text-white"
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          {toast.message}
+        </div>
+      )}
       {/* Top blue wave */}
       <div className="absolute top-0 left-0 w-full h-[180px] bg-linear-to-b from-sky-400 to-sky-300 rounded-b-[100px]" />
 
